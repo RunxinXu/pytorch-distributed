@@ -92,6 +92,20 @@ def main_worker(gpu, ngpus_per_node, args):
             loss.backward()
             optimizer.step()
 
+            # print('epoch', epoch, 'gpu', gpu)
+            # params = list(model.named_parameters())
+            # for i in range(len(params)):
+            #     (name, param) = params[i]
+            #     print(name)
+            #     print(param.grad)
+
+        # 5个epoch 2个gpu 不加控制这个会写10次哦
+        # 如果不像每个gpu都做 那么就
+        if gpu == 0:
+            with open('./hehe.txt', 'a') as f:
+                f.write(str(gpu)+'\n')
+            time.sleep(5)
+
 class MyModel(nn.Module):
     def __init__(self):
         super(MyModel, self).__init__()
