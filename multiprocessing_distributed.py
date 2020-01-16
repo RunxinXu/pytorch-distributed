@@ -24,7 +24,7 @@ from tqdm import tqdm
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
 parser.add_argument('-b',
                     '--batch-size',
-                    default=256,
+                    default=2,
                     type=int,
                     metavar='N',
                     help='mini-batch size (default: 256), this is the total '
@@ -82,6 +82,7 @@ def main_worker(gpu, ngpus_per_node, args):
             data = data.cuda(gpu, non_blocking=True)
             label = label.cuda(gpu, non_blocking=True)
 
+            # output = model.module.hehe(data)
             output = model(data)
             loss = criterion(output, label)
 
@@ -89,19 +90,16 @@ def main_worker(gpu, ngpus_per_node, args):
             loss.backward()
             optimizer.step()
 
-            print('epoch', epoch, 'gpu', gpu)
             params = list(model.named_parameters())
-            for i in range(len(params)):
-                (name, param) = params[i]
-                print(name)
-                print(param.grad)
+            (name, param) = params[0]
+            print('epoch', epoch, 'gpu', gpu, 'param', param.view(-1)[0].item())
 
-        # 5个epoch 2个gpu 不加控制这个会写10次哦
-        # 如果不像每个gpu都做 那么就
-        if gpu == 0:
-            with open('./hehe.txt', 'a') as f:
-                f.write(str(gpu)+'\n')
-            time.sleep(5)
+            # 5个epoch 2个gpu 不加控制这个会写10次哦
+            # 如果不像每个gpu都做 那么就
+            if gpu == 0:
+                # with open('./hehe.txt', 'a') as f:
+                #     f.write(str(gpu)+'\n')
+                time.sleep(5)
 
 class MyModel(nn.Module):
     def __init__(self):
@@ -113,6 +111,10 @@ class MyModel(nn.Module):
     def forward(self, x):
         # print(x.size())
         # print(x)
+        return self.net2(self.relu(self.net1(x)))
+    
+    # 不可以用这个来！！老实用forward的！！
+    def hehe(self, x):
         return self.net2(self.relu(self.net1(x)))
 
 class MyDataset(Dataset):

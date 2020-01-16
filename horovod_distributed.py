@@ -82,7 +82,8 @@ def main_worker(gpu, ngpus_per_node, args):
         model.train()
 
         for i, (data, label) in enumerate(train_loader):
-            
+            print('epoch', epoch, 'iter', i, 'gpu', gpu, 'count', model.count)
+
             data = data.cuda(non_blocking=True)
             label = label.cuda(non_blocking=True)
             output = model(data)
@@ -104,10 +105,10 @@ def main_worker(gpu, ngpus_per_node, args):
 
             # 5个epoch 2个gpu 不加控制这个会写10次哦
             # 如果不像每个gpu都做 那么就
-            if gpu == 0:
-                # with open('./hehe.txt', 'a') as f:
-                #     f.write(str(gpu)+'\n')
-                time.sleep(5)
+            # if gpu == 0:
+            #     # with open('./hehe.txt', 'a') as f:
+            #     #     f.write(str(gpu)+'\n')
+                # time.sleep(5)
 
 class MyModel(nn.Module):
     def __init__(self):
@@ -116,9 +117,13 @@ class MyModel(nn.Module):
         self.relu = nn.ReLU()
         self.net2 = nn.Linear(10, 5)
 
+        self.count = 0
+
+
     def forward(self, x):
         # print(x.size())
         # print(x)
+        self.count += 1
         return self.net2(self.relu(self.net1(x)))
 
 class MyDataset(Dataset):
@@ -127,7 +132,6 @@ class MyDataset(Dataset):
         self.data = torch.randn(10,10)
         self.data[:,0] = torch.arange(10)
         self.labels = torch.ones(10).long()
-
     def __getitem__(self, index):
         return (self.data[index], self.labels[index])
  

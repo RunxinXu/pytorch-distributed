@@ -6,6 +6,7 @@ import torch.nn.parallel
 import torch.backends.cudnn as cudnn
 import torch.optim
 import torch.utils.data
+from torch.utils.data import Dataset
 from tqdm import tqdm
 
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
@@ -40,16 +41,28 @@ def main_worker(gpus, args):
     optimizer = torch.optim.SGD(model.parameters(), args.lr)
     cudnn.benchmark = True
 
-    for epoch in tqdm(range(5)):
-        data = torch.randn(args.batch_size, 10).cuda()
-        label = torch.ones(args.batch_size).long().cuda()
-    
-        output = model(data)
-        loss = criterion(output, label)
+    train_dataset = MyDataset()
 
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+    train_loader = torch.utils.data.DataLoader(train_dataset,
+                                               batch_size=args.batch_size,
+                                               shuffle=True,
+                                               num_workers=2,
+                                               pin_memory=True)
+
+    for epoch in range(5):
+        for i, (data, label) in enumerate(train_loader):
+
+            data = torch.randn(args.batch_size, 10).cuda()
+            label = torch.ones(args.batch_size).long().cuda()
+        
+            output = model(data)
+            loss = criterion(output, label)
+
+            print('hehe', model.module.count)
+
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
 
 class MyModel(nn.Module):
     def __init__(self):
@@ -58,10 +71,27 @@ class MyModel(nn.Module):
         self.relu = nn.ReLU()
         self.net2 = nn.Linear(10, 5)
 
+        self.count = 0
+
     def forward(self, x):
-        print(x.size())
-        print(x)
+        # print(x.size())
+        # print(x)
+        print('count', self.count)
+        self.count += 1
         return self.net2(self.relu(self.net1(x)))
+
+class MyDataset(Dataset):
+    def __init__(self):
+        super().__init__()
+        self.data = torch.randn(10,10)
+        self.data[:,0] = torch.arange(10)
+        self.labels = torch.ones(10).long()
+
+    def __getitem__(self, index):
+        return (self.data[index], self.labels[index])
+ 
+    def __len__(self):
+        return 10
 
 if __name__ == '__main__':
     main()

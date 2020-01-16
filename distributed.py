@@ -82,6 +82,8 @@ def main_worker(gpu, ngpus_per_node, args):
         
         model.train()
         for i, (data, label) in tqdm(enumerate(train_loader)):
+            # print('epoch', epoch, 'iter', i, 'gpu', gpu, 'count', model.module.count)
+
             data = data.cuda(gpu, non_blocking=True)
             label = label.cuda(gpu, non_blocking=True)
 
@@ -92,18 +94,18 @@ def main_worker(gpu, ngpus_per_node, args):
             loss.backward()
             optimizer.step()
 
-            # print('epoch', epoch, 'gpu', gpu)
-            # params = list(model.named_parameters())
-            # for i in range(len(params)):
-            #     (name, param) = params[i]
-            #     print(name)
-            #     print(param.grad)
+            print('epoch', epoch, 'gpu', gpu)
+            params = list(model.named_parameters())
+            for i in range(len(params)):
+                (name, param) = params[i]
+                print(name)
+                print(param)
 
         # 5个epoch 2个gpu 不加控制这个会写10次哦
         # 如果不像每个gpu都做 那么就
         if gpu == 0:
-            with open('./hehe.txt', 'a') as f:
-                f.write(str(gpu)+'\n')
+            # with open('./hehe.txt', 'a') as f:
+            #     f.write(str(gpu)+'\n')
             time.sleep(5)
 
 class MyModel(nn.Module):
@@ -113,9 +115,15 @@ class MyModel(nn.Module):
         self.relu = nn.ReLU()
         self.net2 = nn.Linear(10, 5)
 
+        # self.count = 0
+
     def forward(self, x):
         # print(x.size())
         # print(x)
+        # self.count += 1
+        return self.net2(self.relu(self.net1(x)))
+    
+    def hehe(self, x):
         return self.net2(self.relu(self.net1(x)))
 
 class MyDataset(Dataset):
@@ -124,8 +132,6 @@ class MyDataset(Dataset):
         self.data = torch.randn(10,10)
         self.data[:,0] = torch.arange(10)
         self.labels = torch.ones(10).long()
-        print('data', self.data)
-        print('labels', self.labels)
 
     def __getitem__(self, index):
         return (self.data[index], self.labels[index])
@@ -135,3 +141,7 @@ class MyDataset(Dataset):
 
 if __name__ == '__main__':
     main()
+
+
+# 模型中有统计量 在forward的时候改变的
+# 可以看成每个GPU自己在改变，其实就是互不影响！
